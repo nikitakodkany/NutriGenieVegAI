@@ -1,0 +1,23 @@
+# Backend dependencies
+fastapi==0.109.2
+uvicorn==0.27.1
+chromadb==0.4.22
+pydantic==2.6.1
+python-dotenv==1.0.1
+sqlalchemy==2.0.27
+alembic==1.13.1
+psycopg2-binary==2.9.9
+
+# Frontend dependencies
+streamlit==1.32.0
+pandas==2.2.1
+numpy==1.26.4
+requests==2.31.0
+
+# ML dependencies (basic, open source)
+scikit-learn==1.4.0
+transformers==4.38.2
+torch==2.1.2
+sentencepiece==0.1.99
+protobuf==4.25.2
+einops==0.7.0 
