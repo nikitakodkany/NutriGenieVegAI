@@ -169,7 +169,29 @@ async def recommend_recipes(request: RecipeRecommendationRequest):
                 "dietary_restrictions": getattr(profile, 'dietary_restrictions', [])
             })
             if generated_recipe:
-                results = [generated_recipe]
+                # Normalize LLM output to expected format
+                macros = generated_recipe.get('macros', {})
+                # Ensure all macro keys exist
+                for k in ["protein", "carbs", "fat", "fiber"]:
+                    if k not in macros:
+                        macros[k] = 0
+                recipe_data = {
+                    "id": generated_recipe.get('idMeal', '') or generated_recipe.get('id', ''),
+                    "title": generated_recipe.get('title', '') or generated_recipe.get('strMeal', '') or generated_recipe.get('name', ''),
+                    "ingredients": generated_recipe.get('ingredients', []),
+                    "steps": generated_recipe.get('steps', []) or generated_recipe.get('instructions', []) or generated_recipe.get('strInstructions', []),
+                    "macros": {
+                        "protein": macros.get("protein", 0),
+                        "carbs": macros.get("carbs", 0),
+                        "fat": macros.get("fat", 0),
+                        "fiber": macros.get("fiber", 0),
+                    },
+                    "calories": generated_recipe.get('calories', 0) or generated_recipe.get('nutrition', {}).get('calories', 0),
+                    "tags": generated_recipe.get('tags', []),
+                    "image": generated_recipe.get('strMealThumb', '') or generated_recipe.get('image', ''),
+                    "source": generated_recipe.get('source', 'LLM'),
+                }
+                return [recipe_data]
         
         # Filter out recipes with allergens
         filtered_recipes = []
@@ -233,6 +255,10 @@ async def recommend_recipes(request: RecipeRecommendationRequest):
                 "fat": nutrition.get("fat", 0),
                 "fiber": nutrition.get("fiber", 0)
             }
+            # Ensure all macro keys exist (in case nutrition is missing keys)
+            for k in ["protein", "carbs", "fat", "fiber"]:
+                if k not in macros:
+                    macros[k] = 0
             if calories == 0 or all(v == 0 for v in macros.values()):
                 try:
                     usda_total = {"calories": 0, "protein": 0, "carbs": 0, "fat": 0, "fiber": 0}
@@ -277,7 +303,12 @@ async def recommend_recipes(request: RecipeRecommendationRequest):
                 "title": recipe.get('strMeal', '') or recipe.get('name', ''),
                 "ingredients": ingredients,
                 "steps": steps,
-                "macros": macros,
+                "macros": {
+                    "protein": macros.get("protein", 0),
+                    "carbs": macros.get("carbs", 0),
+                    "fat": macros.get("fat", 0),
+                    "fiber": macros.get("fiber", 0),
+                },
                 "calories": calories,
                 "tags": tags,
                 "image": recipe.get('strMealThumb', '') or recipe.get('image', ''),
@@ -287,13 +318,15 @@ async def recommend_recipes(request: RecipeRecommendationRequest):
                 filtered_recipes.append(recipe_data)
         
         # After building filtered_recipes, filter and sort by closeness to target macros/calories
-        def within_50kcal_5g(value, target, macro=False):
+        def within_50kcal(value, target):
             if target == 0:
                 return True
-            if macro:
-                return abs(value - target) <= 5
-            else:
-                return abs(value - target) <= 50
+            return abs(value - target) <= 50
+
+        def within_5g_macro(value, target):
+            if target == 0:
+                return True
+            return abs(value - target) <= 5
 
         def nutrition_distance(recipe, target_macros, target_calories):
             return (
@@ -303,17 +336,48 @@ async def recommend_recipes(request: RecipeRecommendationRequest):
                 abs(recipe['macros']['fat'] - target_macros['fat'])
             )
 
-        # Only keep recipes within ±50 kcal and ±5g of all macro targets
+        # Only keep recipes within ±50 kcal of target calories and ±5g of recommended macro split
         close_recipes = [
             r for r in filtered_recipes
-            if within_50kcal_5g(r['calories'], target_calories, macro=False)
-            and within_50kcal_5g(r['macros']['protein'], macro_split['protein'], macro=True)
-            and within_50kcal_5g(r['macros']['carbs'], macro_split['carbs'], macro=True)
-            and within_50kcal_5g(r['macros']['fat'], macro_split['fat'], macro=True)
+            if within_50kcal(r['calories'], target_calories)
+            and within_5g_macro(r['macros']['protein'], macro_split['protein'])
+            and within_5g_macro(r['macros']['carbs'], macro_split['carbs'])
+            and within_5g_macro(r['macros']['fat'], macro_split['fat'])
         ]
-        # If none are close, fall back to all
+        # If none are close, generate a new recipe with the LLM and return it
         if not close_recipes:
-            close_recipes = filtered_recipes
+            generated_recipe = recipe_generator.generate_recipe({
+                "dietary_preference": profile.dietary_preference,
+                "target_calories": target_calories,
+                "macro_split": macro_split,
+                "dietary_restrictions": getattr(profile, 'dietary_restrictions', [])
+            })
+            if generated_recipe:
+                # Normalize LLM output to expected format
+                macros = generated_recipe.get('macros', {})
+                # Ensure all macro keys exist
+                for k in ["protein", "carbs", "fat", "fiber"]:
+                    if k not in macros:
+                        macros[k] = 0
+                recipe_data = {
+                    "id": generated_recipe.get('idMeal', '') or generated_recipe.get('id', ''),
+                    "title": generated_recipe.get('title', '') or generated_recipe.get('strMeal', '') or generated_recipe.get('name', ''),
+                    "ingredients": generated_recipe.get('ingredients', []),
+                    "steps": generated_recipe.get('steps', []) or generated_recipe.get('instructions', []) or generated_recipe.get('strInstructions', []),
+                    "macros": {
+                        "protein": macros.get("protein", 0),
+                        "carbs": macros.get("carbs", 0),
+                        "fat": macros.get("fat", 0),
+                        "fiber": macros.get("fiber", 0),
+                    },
+                    "calories": generated_recipe.get('calories', 0) or generated_recipe.get('nutrition', {}).get('calories', 0),
+                    "tags": generated_recipe.get('tags', []),
+                    "image": generated_recipe.get('strMealThumb', '') or generated_recipe.get('image', ''),
+                    "source": generated_recipe.get('source', 'LLM'),
+                }
+                return [recipe_data]
+            else:
+                return []
         # Sort by distance to target
         close_recipes.sort(key=lambda r: nutrition_distance(r, macro_split, target_calories))
         # Return top num_recipes

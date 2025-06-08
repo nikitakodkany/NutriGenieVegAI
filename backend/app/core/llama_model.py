@@ -6,7 +6,7 @@ import os
 
 class LLaMAModel:
     def __init__(self):
-        model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+        model_name = "mistralai/Mistral-7B-Instruct-v0.2"
         
         # Initialize tokenizer and model
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
