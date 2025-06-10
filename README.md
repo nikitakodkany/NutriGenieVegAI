@@ -1,8 +1,8 @@
-# Veg·e·tar·i·an Fitness Recipe Recommender
+# NutriGenie VegAI
 
 ## Overview
 
-An AI-powered system that provides personalized meal recommendations to help you meet your fitness and nutrition goals. It combines user profile analysis, nutritional calculations, dietary/allergen filtering, and advanced recipe generation using open-source large language models (LLMs).
+Veg Fitness Recipe Recommender, an AI-powered system that provides personalized meal recommendations to help you meet your fitness and nutrition goals. It combines user profile analysis, nutritional calculations, dietary/allergen filtering, and advanced recipe generation using open-source large language models (LLMs).
 
 ---
 
