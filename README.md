@@ -1,8 +1,8 @@
-# VRR: Fitness Recipe Recommender
+# veg·e·tar·i·an Fitness Recipe Recommender
 
 ## Overview
 
-**VRR** (Veg Recipe Recommender) is an AI-powered system that provides personalized meal recommendations to help you meet your fitness and nutrition goals. It combines user profile analysis, nutritional calculations, dietary/allergen filtering, and advanced recipe generation using open-source large language models (LLMs).
+An AI-powered system that provides personalized meal recommendations to help you meet your fitness and nutrition goals. It combines user profile analysis, nutritional calculations, dietary/allergen filtering, and advanced recipe generation using open-source large language models (LLMs).
 
 ---
 
