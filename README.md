@@ -1,4 +1,4 @@
-# veg·e·tar·i·an Fitness Recipe Recommender
+# Veg·e·tar·i·an Fitness Recipe Recommender
 
 ## Overview
 
